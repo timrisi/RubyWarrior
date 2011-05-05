@@ -1,101 +1,133 @@
 class Player
   def play_turn(warrior)
-	@warrior = warrior;
-	bind and return if multiple_enemies
-	retreat and return if warrior.health < 5 && warrior.health < @health
-	attack and return if direction_to_enemy != nil
-	rest and return if warrior.health < 16
-	rescue_captive and return if direction_to_captive != nil
-	move and return if warrior.listen.length > 0
+    @warrior = warrior
+	@ticking = direction_of(listen.first(&:ticking?)) if listen.select(&:ticking?).size > 0
+	catch(:end_turn) { turn }
+    @health = health
+  end
+    
+  def initialize
+	@health = 20
+  end
+  
+  # Get rid of the warrior.everything
+  def method_missing(sym, *args, &block)
+    ret = @warrior.send(sym, *args, &block)
+	throw :end_turn if sym=~ /!$/
+	ret
+  end
+  
+  def turn
+	ticking_action if listen.select(&:ticking?).size > 0
+	bind!(direction_to_enemy?) if multiple_enemies?
+	retreat if health < 5 && health < @health
+	attack!(direction_to_enemy?) if direction_to_enemy? != nil
+	rest if health < 16 && listen.size > 0
+	rescue_captive if direction_to_captive? != nil
 	continue
   end
   
-  def direction_to_enemy
-	if @warrior.feel.enemy?
-		return :forward
-	elsif @warrior.feel(:backward).enemy?
-		return :backward
-	elsif @warrior.feel(:left).enemy?
-		return :left
-	elsif @warrior.feel(:right).enemy?
-		return :right
-	else
-		return nil
-	end
+  def direction_to_enemy?
+	return :forward if feel.enemy?
+	return :backward if feel(:backward).enemy?
+	return :left if feel(:left).enemy?
+	return :right if feel(:right).enemy?
+	return nil
   end
   
-  def direction_to_captive
-	if @warrior.feel.captive?
-		return :forward
-	elsif @warrior.feel(:backward).captive?
-		return :backward
-	elsif @warrior.feel(:left).captive?
-		return :left
-	elsif @warrior.feel(:right).captive?
-		return :right
-	else
-		return nil
-	end
+  def direction_to_captive?
+	return :forward if feel.captive?
+	return :backward if feel(:backward).captive?
+	return :left if feel(:left).captive?
+	return :right if feel(:right).captive?
+	return nil
   end
   
-  def multiple_enemies
+  def direction_to_ticking?
+	return :forward if feel.ticking?
+	return :left if feel(:left).ticking?
+	return :right if feel(:right).ticking?
+	return :backward if feel(:backward).ticking?
+	return nil
+  end
+  
+  def multiple_enemies?
 	@enemies = 0
-	if @warrior.feel.enemy?
-		@enemies += 1
-	end
-	if @warrior.feel(:backward).enemy?
-		@enemies += 1
-	end
-	if @warrior.feel(:left).enemy?
-		@enemies += 1
-	end
-	if @warrior.feel(:right).enemy?
-		@enemies += 1
-	end
+	@enemies += 1 if feel.enemy?
+	@enemies += 1 if feel(:backward).enemy?
+	@enemies += 1 if feel(:left).enemy?
+	@enemies += 1 if feel(:right).enemy?
 	return @enemies > 1
   end
   
   def rest
-	@warrior.rest!
-	@health = @warrior.health
+	rest!
   end
   
   def retreat
-	if @warrior.feel(:backward).empty?
-		@warrior.walk!(:backward)
-	elsif @warrior.feel(:left).empty?
-		@warrior.walk!(:left)
-	elsif @warrior.feel(:right).empty?
-		@warrior.walk!(:right)
-	elsif @warrior.feel.empty?
-		@warrior.walk!
-	end
-	@health = @warrior.health
+	walk!(:backward) if feel(:backward).empty?
+	walk!(:left) if feel(:left).empty?
+	walk!(:right) if feel(:right).empty?
+	walk! if feel.empty?
   end
   
   def continue
-	@warrior.walk!(@warrior.direction_of_stairs)
-	@health = @warrior.health
+    walk!(to_captive) if listen.select(&:captive?).size > 0
+	walk!(to_enemy) if listen.select(&:enemy?).size > 0	
+	walk!(direction_of_stairs)
   end
   
-  def attack
-    @warrior.attack!(direction_to_enemy)
-	@health = @warrior.health
+  def to_captive
+	if feel(direction_of(listen.first(&:captive?))).stairs?  || !feel(direction_of(listen.first(&:captive?))).empty?
+	  return :forward if feel.empty? && !feel.stairs?
+	  return :left if feel(:left).empty? && !feel(:left).stairs?
+	  return :right if feel(:right).empty? && !feel(:right).stairs?
+	  return :backward if feel(:backward).empty? && !feel(:backward).stairs?
+	else
+		return direction_of(listen.first(&:captive?))
+	end
   end
   
-  def bind
-	@warrior.bind!(direction_to_enemy)
-	@health = @warrior.health
+  def to_enemy
+  	if feel(direction_of(listen.first(&:enemy?))).stairs? || !feel(direction_of(listen.first(&:enemy?))).empty?
+	  return :forward if feel.empty? && !feel.stairs?
+	  return :left if feel(:left).empty? && !feel(:left).stairs?
+	  return :right if feel(:right).empty? && !feel(:right).stairs?
+	  return :backward if feel(:backward).empty? && !feel(:backward).stairs?
+	else
+		return direction_of(listen.first(&:enemy?))
+	end
+  end
+  
+  def to_ticking
+    puts @ticking
+  	if feel(@ticking).empty?
+	  return @ticking
+	else
+	  return :forward if feel.empty?
+	  return :left if feel(:left).empty?
+	  return :right if feel(:right).empty?
+	  return :backward if feel(:backward).empty?
+	end
+  end
+  
+  def to_stairs
+	if !feel(direction_of_stairs).empty?
+	  return :forward if feel.empty? || feel.stairs?
+	  return :left if feel(:left).empty? || feel(:left).stairs?
+	  return :right if feel(:right).empty? || feel(:right).stairs?
+	  return :backward if feel(:backward).empty? || feel(:backward).stairs?
+	else
+	  return direction_of_stairs
+	end
   end
   
   def rescue_captive
-	@warrior.rescue!(direction_to_captive)
-	@health = @warrior.health
+	rescue!(direction_to_captive?)
   end
   
-  def move
-	if @warrior.direction_of(@warrior.listen.first.captive?) != nil
-		@warrior.move!(warrior.direction_of(@warrior.listen.first.captive?))
-	end
+  def ticking_action
+	rescue!(direction_to_ticking?) if direction_to_ticking? != nil
+	walk!(to_ticking)
   end
 end

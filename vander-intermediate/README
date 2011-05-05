@@ -1,20 +1,18 @@
-Level 4
+Level 6
 
-Your ears become more in tune with the surroundings. Listen to find enemies and captives!
+What's that ticking? Some captives have a timed bomb at their feet!
 
-Tip: Use warrior.listen to find spaces with other units, and warrior.direction_of to determine what direction they're in.
+Tip: Hurry and rescue captives first that have space.ticking?, they'll soon go!
 
- ----
-|C s |
-| @ S|
-|C s>|
- ----
+ ------
+|Cs   >|
+|@  sC |
+ ------
 
   > = Stairs
   @ = Vander (20 HP)
-  C = Captive (1 HP)
   s = Sludge (12 HP)
-  S = Thick Sludge (24 HP)
+  C = Captive (1 HP)
 
 
 Warrior Abilities:
