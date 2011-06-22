@@ -1,21 +1,31 @@
-Level 6
+Level 9
 
-What's that ticking? Some captives have a timed bomb at their feet!
+Never before have you seen a room so full of sludge. Start the fireworks!
 
-Tip: Hurry and rescue captives first that have space.ticking?, they'll soon go!
+Tip: Be careful not to let the ticking captive get caught in the flames. Use warrior.distance_of to avoid the captives.
 
- ------
-|Cs   >|
-|@  sC |
- ------
+ ----
+|ssC>|
+|@sss|
+|ssC |
+ ----
 
   > = Stairs
   @ = Vander (20 HP)
-  s = Sludge (12 HP)
   C = Captive (1 HP)
+  s = Sludge (12 HP)
 
 
 Warrior Abilities:
+
+  warrior.distance_of
+    Pass a Space as an argument, and it will return an integer representing the distance to that space.
+
+  warrior.look
+    Returns an array of up to three Spaces in the given direction (forward by default).
+
+  warrior.detonate!
+    Detonate a bomb in a given direction (forward by default) which damages that space and surrounding 4 spaces (including yourself).
 
   warrior.listen
     Returns an array of all spaces which have units in them.
